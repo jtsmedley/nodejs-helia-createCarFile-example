@@ -1,0 +1,19 @@
+{
+  "name": "nodejs-helia-createcarfile-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@helia/car": "1.0.4",
+    "@helia/unixfs": "1.4.2",
+    "@ipld/car": "5.2.4",
+    "blockstore-fs": "1.1.8",
+    "helia": "2.1.0"
+  }
+}
