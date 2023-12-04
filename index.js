@@ -11,7 +11,6 @@ import path from "node:path";
 import os from "node:os";
 import { mkdir } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
-import { once } from "node:events";
 import { Readable } from "node:stream";
 
 (async () => {
@@ -25,13 +24,16 @@ import { Readable } from "node:stream";
   await mkdir(temporaryBlockstorePath, { recursive: true });
 
   // Setup Blockstore and Helia
+  console.log(`Initializing Helia`);
   const temporaryFsBlockstore = new FsBlockstore(temporaryBlockstorePath),
-    helia = await createHelia(),
-    heliaFs = unixfs({
+    helia = await createHelia({
       blockstore: temporaryFsBlockstore,
-    });
+    }),
+    heliaFs = unixfs(helia);
+  console.log(`Initialized Helia`);
 
   // Pack Multiple Files into CAR file for upload
+  console.log(`Generating Files`);
   let parsedEntries = {};
   const source = [
     {
@@ -47,11 +49,13 @@ import { Readable } from "node:stream";
       content: Buffer.from("upload top level test object", "utf-8"),
     },
   ];
+  console.log(`Generated Files`);
 
   // Import Objects to Blockstore
+  console.log(`Importing`);
   for (let sourceEntry of source) {
     sourceEntry.path =
-      sourceEntry.path[0] === "/"
+      sourceEntry.path.startsWith("/")
         ? `/${uploadId}${sourceEntry.path}`
         : `/${uploadId}/${sourceEntry.path}`;
   }
@@ -59,15 +63,14 @@ import { Readable } from "node:stream";
     parsedEntries[entry.path] = entry;
   }
   const rootEntry = parsedEntries[uploadId];
+  console.log(`Imported`);
 
   // Export blocks to carFile
-  const carExporter = car(helia);
-  const { writer, out } = CarWriter.create([rootEntry.cid]);
-  const exportProcess = carExporter.export(rootEntry.cid, writer);
-  const output = createWriteStream("example.car"),
-    eventPromise = once(output, "end");
+  console.log(`Exporting`);
+  const carExporter = car(helia),
+    { writer, out } = CarWriter.create([rootEntry.cid]),
+    output = createWriteStream("example.car");
   Readable.from(out).pipe(output);
-  await exportProcess;
-  await eventPromise;
-  console.log(`Uploaded!!!`);
+  await carExporter.export(rootEntry.cid, writer);
+  console.log(`Exported!`);
 })();
